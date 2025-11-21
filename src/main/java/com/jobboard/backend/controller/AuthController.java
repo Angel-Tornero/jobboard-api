@@ -8,9 +8,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.jobboard.backend.dto.AuthResponse;
-import com.jobboard.backend.dto.LoginRequest;
-import com.jobboard.backend.dto.SignupRequest;
+import com.jobboard.backend.dto.auth.AuthResponse;
+import com.jobboard.backend.dto.auth.LoginRequest;
+import com.jobboard.backend.dto.auth.SignupRequest;
 import com.jobboard.backend.service.AuthService;
 
 import jakarta.validation.Valid;

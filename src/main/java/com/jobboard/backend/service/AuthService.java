@@ -7,8 +7,8 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.jobboard.backend.dto.LoginRequest;
-import com.jobboard.backend.dto.SignupRequest;
+import com.jobboard.backend.dto.auth.LoginRequest;
+import com.jobboard.backend.dto.auth.SignupRequest;
 import com.jobboard.backend.model.User;
 import com.jobboard.backend.repository.UserRepository;
 import com.jobboard.backend.security.JwtUtil;

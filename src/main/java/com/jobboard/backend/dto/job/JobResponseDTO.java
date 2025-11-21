@@ -1,4 +1,4 @@
-package com.jobboard.backend.dto;
+package com.jobboard.backend.dto.job;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

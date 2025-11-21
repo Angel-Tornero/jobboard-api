@@ -19,8 +19,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.jobboard.backend.dto.JobRequestDTO;
-import com.jobboard.backend.dto.JobResponseDTO;
+import com.jobboard.backend.dto.job.JobRequestDTO;
+import com.jobboard.backend.dto.job.JobResponseDTO;
 import com.jobboard.backend.model.Job;
 import com.jobboard.backend.service.JobService;
 

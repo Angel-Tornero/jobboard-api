@@ -1,4 +1,4 @@
-package com.jobboard.backend.specification;
+package com.jobboard.backend.repository.specs;
 
 import java.math.BigDecimal;
 
