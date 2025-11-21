@@ -1,69 +1,50 @@
-package com.jobboard.backend.model;
+package com.jobboard.backend.dto;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-import jakarta.persistence.Transient;
+import com.jobboard.backend.model.Job;
 
-@Entity
-@Table(name = "jobs")
-public class Job {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+public class JobResponseDTO {
     private Long id;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "employer_id", nullable = false)
-    private User employer;
-
-    @Column(name = "title", nullable = false)
     private String title;
-
-    @Column(name = "company_name", nullable = false)
     private String companyName;
-
     private String location;
-
-    @Column(name = "description", columnDefinition = "TEXT")
     private String description;
-
-    @Column(name = "type", nullable = false)
     private String type;
-
-    @Column(name = "salary_min", precision = 10, scale = 2)
     private BigDecimal salaryMin;
-
-    @Column(name = "salary_max", precision = 10, scale = 2)
     private BigDecimal salaryMax;
-
-    @Column(columnDefinition = "TEXT")
     private String benefits;
-
-    @Column(columnDefinition = "TEXT")
     private String extras;
+    private LocalDateTime createdAt;
+    private String employerEmail;
+    private Double score;
 
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    public JobResponseDTO() {}
 
-    @Transient
-    private Double score = 0.0;
+    public JobResponseDTO(Job job) {
+        this.id = job.getId();
+        this.title = job.getTitle();
+        this.companyName = job.getCompanyName();
+        this.location = job.getLocation();
+        this.description = job.getDescription();
+        this.type = job.getType();
+        this.salaryMin = job.getSalaryMin();
+        this.salaryMax = job.getSalaryMax();
+        this.benefits = job.getBenefits();
+        this.extras = job.getExtras();
+        this.createdAt = job.getCreatedAt();
+        this.score = job.getScore();
+
+        // Only expose employer email, not the full User object
+        if (job.getEmployer() != null) {
+            this.employerEmail = job.getEmployer().getEmail();
+        }
+    }
 
     // Getters and setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
-
-    public User getEmployer() { return employer; }
-    public void setEmployer(User employer) { this.employer = employer; }
 
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
@@ -94,6 +75,9 @@ public class Job {
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public String getEmployerEmail() { return employerEmail; }
+    public void setEmployerEmail(String employerEmail) { this.employerEmail = employerEmail; }
 
     public double getScore() { return score; }
     public void setScore(double score) { this.score = score; }

@@ -21,8 +21,7 @@ public class AgeRule implements JobRule {
         return 1.0 - (daysAgo / 7.0);
     }
 
+    // Getters
     @Override
-    public int getWeight() {
-        return weight;
-    }
+    public int getWeight() { return weight; }
 }

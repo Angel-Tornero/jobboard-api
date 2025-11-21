@@ -18,6 +18,7 @@ public class SalaryRule implements JobRule {
         return (job.getSalaryMin().doubleValue() - minSalary) / (maxSalary - minSalary);
     }
 
+    // Getters
     @Override
     public int getWeight() { return weight; }
 }

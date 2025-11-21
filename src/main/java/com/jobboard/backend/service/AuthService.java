@@ -1,7 +1,9 @@
 package com.jobboard.backend.service;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -10,7 +12,6 @@ import com.jobboard.backend.dto.SignupRequest;
 import com.jobboard.backend.model.User;
 import com.jobboard.backend.repository.UserRepository;
 import com.jobboard.backend.security.JwtUtil;
-
 
 @Service
 public class AuthService {
@@ -27,39 +28,41 @@ public class AuthService {
     private JwtUtil jwtUtil;
 
     public String signup(SignupRequest request) {
-        logger.info("Signup attempt for email: {}", request.email);
-        if (userRepository.existsByEmail(request.email)) {
-            logger.warn("Signup failed: Email already in use - {}", request.email);
-            throw new RuntimeException("Email is already in use.");
+        logger.info("Signup attempt for email: {}", request.getEmail());
+        
+        if (userRepository.existsByEmail(request.getEmail())) {
+            logger.warn("Signup failed: Email already in use - {}", request.getEmail());
+            throw new IllegalArgumentException("Email is already in use.");
         }
 
         User user = new User();
-        user.setEmail(request.email);
-        user.setPassword(passwordEncoder.encode(request.password));
-        user.setRole("employer");
+        user.setEmail(request.getEmail());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setRole("employer"); 
 
         userRepository.save(user);
 
         String token = jwtUtil.generateToken(user);
-        logger.info("User registered successfully: {}", request.email);
+        logger.info("User registered successfully: {}", request.getEmail());
         return token;
     }
 
     public String login(LoginRequest request) {
-        logger.info("Login attempt for email: {}", request.email);
-        User user = userRepository.findByEmail(request.email)
+        logger.info("Login attempt for email: {}", request.getEmail());
+        
+        User user = userRepository.findByEmail(request.getEmail())
             .orElseThrow(() -> {
-                logger.warn("Login failed: User not found - {}", request.email);
-                return new RuntimeException("User not found");
+                logger.warn("Login failed: User not found - {}", request.getEmail());
+                return new BadCredentialsException("Invalid email or password");
             });
 
-        if (!passwordEncoder.matches(request.password, user.getPassword())) {
-            logger.warn("Login failed: Incorrect password for email - {}", request.email);
-            throw new RuntimeException("Incorrect password");
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            logger.warn("Login failed: Incorrect password for email - {}", request.getEmail());
+            throw new BadCredentialsException("Invalid email or password");
         }
 
         String token = jwtUtil.generateToken(user);
-        logger.info("User logged in successfully: {}", request.email);
+        logger.info("User logged in successfully: {}", request.getEmail());
         return token;
     }
 }

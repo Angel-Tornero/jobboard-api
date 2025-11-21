@@ -23,6 +23,7 @@ public class CompanyRule implements JobRule {
         return (double)(count - min) / (max - min);
     }
 
+    // Getters
     @Override
     public int getWeight() { return weight; }
 }

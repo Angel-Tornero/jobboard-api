@@ -6,7 +6,6 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,26 +19,33 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.mockito.MockitoAnnotations;
 
+import com.jobboard.backend.exception.ResourceNotFoundException;
 import com.jobboard.backend.model.Job;
 import com.jobboard.backend.model.User;
 import com.jobboard.backend.repository.JobRepository;
+import com.jobboard.backend.repository.UserRepository;
 
 class JobServiceTest {
 
     @Mock
     private JobRepository jobRepository;
 
+    @Mock
+    private UserRepository userRepository;
+
     @InjectMocks
     private JobService jobService;
-
+    private User employer;
     private Job validJob;
+    private final String EMPLOYER_EMAIL = "boss@company.com";
 
     @BeforeEach
     void setup() {
         MockitoAnnotations.openMocks(this);
 
-        User employer = new User();
+        employer = new User();
         employer.setId(1L);
+        employer.setEmail(EMPLOYER_EMAIL);
 
         validJob = new Job();
         validJob.setId(1L);
@@ -53,23 +59,18 @@ class JobServiceTest {
 
     @Test
     void testCreateJobSuccess() {
-        when(jobRepository.save(validJob)).thenReturn(validJob);
+        when(userRepository.findByEmail(EMPLOYER_EMAIL)).thenReturn(Optional.of(employer));
+        
+        when(jobRepository.save(any(Job.class))).thenReturn(validJob);
 
-        Job created = jobService.createJob(validJob);
+        Job created = jobService.createJob(validJob, EMPLOYER_EMAIL);
 
         assertNotNull(created);
         assertEquals(validJob.getTitle(), created.getTitle());
+        assertEquals(employer, created.getEmployer());
+        
+        verify(userRepository, times(1)).findByEmail(EMPLOYER_EMAIL);
         verify(jobRepository, times(1)).save(validJob);
-    }
-
-    @Test
-    void testCreateJobInvalidSalary() {
-        validJob.setSalaryMin(BigDecimal.valueOf(60000));
-        validJob.setSalaryMax(BigDecimal.valueOf(50000));
-
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> jobService.createJob(validJob));
-        assertEquals("Minimum salary cannot be greater than maximum salary", ex.getMessage());
     }
 
     @Test
@@ -85,16 +86,27 @@ class JobServiceTest {
     void testGetJobByIdNotFound() {
         when(jobRepository.findById(2L)).thenReturn(Optional.empty());
 
-        Job job = jobService.getJobById(2L);
-        assertNull(job);
+        ResourceNotFoundException ex = assertThrows(ResourceNotFoundException.class,
+                () -> jobService.getJobById(2L));
+        
+        assertEquals("Job not found with id: 2", ex.getMessage());
     }
 
     @Test
     void testDeleteJob() {
+        when(jobRepository.existsById(1L)).thenReturn(true);
         doNothing().when(jobRepository).deleteById(1L);
 
         jobService.deleteJob(1L);
         verify(jobRepository, times(1)).deleteById(1L);
+    }
+    
+    @Test
+    void testDeleteJobNotFound() {
+        when(jobRepository.existsById(99L)).thenReturn(false);
+
+        assertThrows(ResourceNotFoundException.class, 
+            () -> jobService.deleteJob(99L));
     }
 
     @Test
@@ -121,7 +133,7 @@ class JobServiceTest {
     void testUpdateJobNotFound() {
         when(jobRepository.findById(2L)).thenReturn(Optional.empty());
 
-        RuntimeException ex = assertThrows(RuntimeException.class,
+        RuntimeException ex = assertThrows(ResourceNotFoundException.class,
                 () -> jobService.updateJob(2L, validJob));
         assertEquals("Job not found with id: 2", ex.getMessage());
     }

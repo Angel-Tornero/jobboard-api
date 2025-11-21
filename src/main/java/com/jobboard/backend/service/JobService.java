@@ -1,6 +1,7 @@
 package com.jobboard.backend.service;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 
@@ -8,10 +9,14 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import com.jobboard.backend.exception.ResourceNotFoundException;
 import com.jobboard.backend.model.Job;
+import com.jobboard.backend.model.User;
 import com.jobboard.backend.repository.JobRepository;
+import com.jobboard.backend.repository.UserRepository;
 import com.jobboard.backend.service.scoring.JobScorer;
 import com.jobboard.backend.service.scoring.rules.AgeRule;
 import com.jobboard.backend.service.scoring.rules.CompanyRule;
@@ -25,9 +30,11 @@ public class JobService {
 
     private final JobRepository jobRepository;
     private final JobScorer scorer;
+    private final UserRepository userRepository;
 
-    public JobService(JobRepository jobRepository) {
+    public JobService(JobRepository jobRepository, UserRepository userRepository) {
         this.jobRepository = jobRepository;
+        this.userRepository = userRepository;
         this.scorer = new JobScorer(List.of(
             new AgeRule(3),
             new SalaryRule(2),
@@ -36,14 +43,26 @@ public class JobService {
     }
 
     public Page<Job> searchJobs(String title, String location, BigDecimal minSalary, BigDecimal maxSalary, Pageable pageable) {
-        List<Job> jobs = jobRepository.findAll((root, query, cb) -> {
+        Specification<Job> spec = (root, query, cb) -> {
             Predicate predicate = cb.conjunction();
-            if (title != null) predicate = cb.and(predicate, cb.like(cb.lower(root.get("title")), "%" + title.toLowerCase() + "%"));
-            if (location != null) predicate = cb.and(predicate, cb.like(cb.lower(root.get("location")), "%" + location.toLowerCase() + "%"));
-            if (minSalary != null) predicate = cb.and(predicate, cb.ge(root.get("salaryMin"), minSalary));
-            if (maxSalary != null) predicate = cb.and(predicate, cb.le(root.get("salaryMax"), maxSalary));
+            
+            if (title != null && !title.isBlank()) {
+                predicate = cb.and(predicate, cb.like(cb.lower(root.get("title")), "%" + title.toLowerCase() + "%"));
+            }
+            if (location != null && !location.isBlank()) {
+                predicate = cb.and(predicate, cb.like(cb.lower(root.get("location")), "%" + location.toLowerCase() + "%"));
+            }
+            if (minSalary != null) {
+                predicate = cb.and(predicate, cb.ge(root.get("salaryMin"), minSalary));
+            }
+            if (maxSalary != null) {
+                predicate = cb.and(predicate, cb.le(root.get("salaryMax"), maxSalary));
+            }
             return predicate;
-        });
+        };
+
+        List<Job> jobs = jobRepository.findAll(spec);
+
         jobs.forEach(job -> job.setScore(calculateScore(job, jobs)));
         jobs.sort(Comparator.comparingDouble(Job::getScore).reversed());
         int start = Math.min((int) pageable.getOffset(), jobs.size());
@@ -53,54 +72,36 @@ public class JobService {
         return new PageImpl<>(pagedJobs, pageable, jobs.size());
     }
 
-
     public double calculateScore(Job job, List<Job> allJobs) {
         return scorer.score(job, allJobs);
     }
 
-    public Job createJob(Job job) {
-        validateJob(job);
+    public Job createJob(Job job, String employerEmail) {
+        User employer = userRepository.findByEmail(employerEmail)
+            .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + employerEmail));
+        job.setEmployer(employer);
+        job.setCreatedAt(LocalDateTime.now());
         return jobRepository.save(job);
     }
 
-    public void deleteJob(Long id) {
-        jobRepository.deleteById(id);
-    }
-
     public Job getJobById(Long id) {
-        return jobRepository.findById(id).orElse(null);
+        return jobRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Job not found with id: " + id));
     }
 
     @Transactional
     public Job updateJob(Long id, Job updatedJob) {
-        validateJob(updatedJob);
-        Job existingJob = jobRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Job not found with id: " + id));
+        Job existingJob = getJobById(id);
 
-        BeanUtils.copyProperties(updatedJob, existingJob, "id");
+        BeanUtils.copyProperties(updatedJob, existingJob, "id", "createdAt", "employer", "score");
 
         return jobRepository.save(existingJob);
     }
 
-    private void validateJob(Job job) {
-        if (job.getSalaryMin() != null && job.getSalaryMax() != null &&
-            job.getSalaryMin().compareTo(job.getSalaryMax()) > 0) {
-            throw new IllegalArgumentException("Minimum salary cannot be greater than maximum salary");
+    public void deleteJob(Long id) {
+        if (!jobRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Job not found with id: " + id);
         }
-
-        if (job.getType() == null || !List.of("full-time", "part-time", "contract", "internship", "temporary")
-                .contains(job.getType())) {
-            throw new IllegalArgumentException("Invalid job type: " + job.getType());
-        }
-
-        if (job.getEmployer() == null || job.getEmployer().getId() == null) {
-            throw new IllegalArgumentException("Job must have a valid employer");
-        }
-        if (job.getTitle() == null || job.getTitle().isBlank()) {
-            throw new IllegalArgumentException("Job title is required");
-        }
-        if (job.getCompanyName() == null || job.getCompanyName().isBlank()) {
-            throw new IllegalArgumentException("Company name is required");
-        }
+        jobRepository.deleteById(id);
     }
 }
