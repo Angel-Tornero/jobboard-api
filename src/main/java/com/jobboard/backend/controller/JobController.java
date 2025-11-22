@@ -1,11 +1,8 @@
 package com.jobboard.backend.controller;
 
-import java.math.BigDecimal;
-
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -16,11 +13,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.jobboard.backend.dto.job.JobRequestDTO;
 import com.jobboard.backend.dto.job.JobResponseDTO;
+import com.jobboard.backend.dto.job.JobSearchCriteria;
 import com.jobboard.backend.model.Job;
 import com.jobboard.backend.service.JobService;
 
@@ -29,47 +26,44 @@ import jakarta.validation.Valid;
 @RestController
 @RequestMapping("/api/v1/job")
 public class JobController {
-    @Autowired
-    private JobService jobService;
     
-    // Search jobs ordered by ranking
+    private final JobService jobService;
+
+    public JobController(JobService jobService) {
+        this.jobService = jobService;
+    }
+    
+    /**
+     * Filters jobs based on criteria object and standard pagination.
+     * @param criteria binds query params (title, location, salary) automatically
+     * @param pageable binds ?page=0&size=10&sort=date,desc automatically
+     */
     @GetMapping("/search")
     public ResponseEntity<Page<JobResponseDTO>> searchJobs(
-        @RequestParam(required = false) String title,
-        @RequestParam(required = false) String location,
-        @RequestParam(required = false) BigDecimal minSalary,
-        @RequestParam(required = false) BigDecimal maxSalary,
-        @RequestParam(defaultValue = "0") int page,
-        @RequestParam(defaultValue = "10") int size) {
+            JobSearchCriteria criteria,
+            @PageableDefault(size = 10) Pageable pageable) {
 
-        Pageable pageable = PageRequest.of(page, size);
-        Page<Job> jobsPage = jobService.searchJobs(title, location, minSalary, maxSalary, pageable);
-
-        return ResponseEntity.ok(jobsPage.map(JobResponseDTO::new));
+        // Service now accepts the criteria object and the pageable directly
+        return ResponseEntity.ok(jobService.searchJobs(criteria, pageable));
     }
 
     // Basic CRUD
     @PostMapping
     public ResponseEntity<JobResponseDTO> createJob(@Valid @RequestBody JobRequestDTO jobRequest, Authentication authentication) {
-        Job jobEntity = jobRequest.toEntity();
         String email = authentication.getName();
-        Job newJob = jobService.createJob(jobEntity, email);
-        return ResponseEntity.status(HttpStatus.CREATED).body(new JobResponseDTO(newJob));
+        JobResponseDTO newJob = jobService.createJob(jobRequest, email);
+        return ResponseEntity.status(HttpStatus.CREATED).body(newJob);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<JobResponseDTO> getJob(@PathVariable Long id) {
         Job job = jobService.getJobById(id);
-        if (job == null) {
-            return ResponseEntity.notFound().build(); 
-        }
         return ResponseEntity.ok(new JobResponseDTO(job));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<JobResponseDTO> updateJob(@PathVariable Long id, @Valid @RequestBody JobRequestDTO jobRequest) {
-        Job jobEntity = jobRequest.toEntity();
-        Job updatedJob = jobService.updateJob(id, jobEntity);
+        Job updatedJob = jobService.updateJob(id, jobRequest);
         return ResponseEntity.ok(new JobResponseDTO(updatedJob));
     }
 

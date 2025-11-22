@@ -19,6 +19,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.mockito.MockitoAnnotations;
 
+import com.jobboard.backend.dto.job.JobRequestDTO;
+import com.jobboard.backend.dto.job.JobResponseDTO;
 import com.jobboard.backend.exception.ResourceNotFoundException;
 import com.jobboard.backend.model.Job;
 import com.jobboard.backend.model.User;
@@ -36,6 +38,7 @@ class JobServiceTest {
     @InjectMocks
     private JobService jobService;
     private User employer;
+    private JobRequestDTO validJobRequest;
     private Job validJob;
     private final String EMPLOYER_EMAIL = "boss@company.com";
 
@@ -47,13 +50,15 @@ class JobServiceTest {
         employer.setId(1L);
         employer.setEmail(EMPLOYER_EMAIL);
 
-        validJob = new Job();
-        validJob.setId(1L);
-        validJob.setTitle("Backend Developer");
-        validJob.setCompanyName("TechCorp");
-        validJob.setType("full-time");
-        validJob.setSalaryMin(BigDecimal.valueOf(30000));
-        validJob.setSalaryMax(BigDecimal.valueOf(50000));
+        validJobRequest = new JobRequestDTO(
+            "Backend Developer",
+            "TechCorp",
+            "full-time",
+            "Remote",
+            BigDecimal.valueOf(30000), // salaryMin
+            BigDecimal.valueOf(50000)  // salaryMax
+        );
+        validJob = validJobRequest.toEntity();
         validJob.setEmployer(employer);
     }
 
@@ -63,14 +68,14 @@ class JobServiceTest {
         
         when(jobRepository.save(any(Job.class))).thenReturn(validJob);
 
-        Job created = jobService.createJob(validJob, EMPLOYER_EMAIL);
+        JobResponseDTO created = jobService.createJob(validJobRequest, EMPLOYER_EMAIL);
 
         assertNotNull(created);
-        assertEquals(validJob.getTitle(), created.getTitle());
-        assertEquals(employer, created.getEmployer());
+        assertEquals(validJobRequest.getTitle(), created.getTitle());
+        assertEquals(employer.getEmail(), created.getEmployerEmail());
         
         verify(userRepository, times(1)).findByEmail(EMPLOYER_EMAIL);
-        verify(jobRepository, times(1)).save(validJob);
+        verify(jobRepository, times(1)).save(any(Job.class));
     }
 
     @Test
@@ -111,18 +116,19 @@ class JobServiceTest {
 
     @Test
     void testUpdateJobSuccess() {
-        Job updatedJob = new Job();
-        updatedJob.setTitle("Senior Backend Developer");
-        updatedJob.setCompanyName("TechCorp");
-        updatedJob.setType("full-time");
-        updatedJob.setSalaryMin(BigDecimal.valueOf(35000));
-        updatedJob.setSalaryMax(BigDecimal.valueOf(55000));
-        updatedJob.setEmployer(validJob.getEmployer());
+        JobRequestDTO updatedJobRequest = new JobRequestDTO(
+            "Senior Backend Developer",
+            "TechCorp",
+            "full-time",
+            "Remote",
+            BigDecimal.valueOf(30000), // salaryMin
+            BigDecimal.valueOf(50000)  // salaryMax
+        );
 
         when(jobRepository.findById(1L)).thenReturn(Optional.of(validJob));
-        when(jobRepository.save(any(Job.class))).thenReturn(updatedJob);
+        when(jobRepository.save(any(Job.class))).thenReturn(updatedJobRequest.toEntity());
 
-        Job result = jobService.updateJob(1L, updatedJob);
+        Job result = jobService.updateJob(1L, updatedJobRequest);
 
         assertNotNull(result);
         assertEquals("Senior Backend Developer", result.getTitle());
@@ -134,7 +140,7 @@ class JobServiceTest {
         when(jobRepository.findById(2L)).thenReturn(Optional.empty());
 
         RuntimeException ex = assertThrows(ResourceNotFoundException.class,
-                () -> jobService.updateJob(2L, validJob));
+                () -> jobService.updateJob(2L, validJobRequest));
         assertEquals("Job not found with id: 2", ex.getMessage());
     }
 

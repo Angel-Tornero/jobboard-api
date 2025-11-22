@@ -1,6 +1,5 @@
 package com.jobboard.backend.config;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -8,8 +7,11 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
-    @Autowired
-    private SimpleRateLimiterInterceptor rateLimiterInterceptor;
+    private final SimpleRateLimiterInterceptor rateLimiterInterceptor;
+
+    public WebConfig(SimpleRateLimiterInterceptor rateLimiterInterceptor) {
+        this.rateLimiterInterceptor = rateLimiterInterceptor;
+    }
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {

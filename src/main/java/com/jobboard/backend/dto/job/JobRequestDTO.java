@@ -47,7 +47,20 @@ public class JobRequestDTO {
         return salaryMin.compareTo(salaryMax) <= 0;
     }
 
+    // Default constructor (JSON deserialization)
     public JobRequestDTO() {}
+
+    // All-Args constructor (Required for Unit Tests)
+    public JobRequestDTO(String title, String companyName, String type, String location, BigDecimal salaryMin, BigDecimal salaryMax) {
+        this.title = title;
+        this.companyName = companyName;
+        this.type = type;
+        this.location = location;
+        this.salaryMin = salaryMin;
+        this.salaryMax = salaryMax;
+        // Default values for optional fields in this constructor context
+        this.description = "Default description for testing"; 
+    }
 
     // Helper method to convert DTO -> Entity
     public Job toEntity() {
