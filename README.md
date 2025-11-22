@@ -64,7 +64,7 @@ JOBBOARD_JWT_SECRET=your_secret_key
 
 To execute the test suite:
 ```bash
-bash ./scripts/start-tests.sh
+./mvnw test
 ```
 
 ## Database
