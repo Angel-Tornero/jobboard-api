@@ -2,11 +2,9 @@ package com.jobboard.backend.security;
 
 import java.util.Collection;
 
-import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-@Profile(value={"dev"})
 public class UserDetailsImpl implements UserDetails {
     private String email;
     private String password;

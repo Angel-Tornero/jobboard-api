@@ -2,7 +2,6 @@ package com.jobboard.backend.security;
 
 import java.util.Date;
 
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import com.jobboard.backend.model.User;
@@ -12,7 +11,6 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 
 @Component
-@Profile(value={"dev"})
 public class JwtUtil {
     private final String SECRET_KEY = System.getenv("JOBBOARD_JWT_SECRET");
     public String generateToken(User user) {
