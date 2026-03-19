@@ -98,9 +98,3 @@ Each rule contributes a normalized score, allowing the system to combine multipl
     Each rule has a configurable weight. The final job score is:
     ```final_score = Σ (rule_normalized_score × rule_weight)```
 This score is used to order search results.
-
-**Advantages:**  
-- Extensible — easily add/remove rules
-- Transparent — easy to see why a job ranks higher
-- Configurable — adjust weights for business priorities
-- Efficient — rules operate independently and can be cached or parallelized
