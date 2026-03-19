@@ -36,37 +36,6 @@ SPRING_DATASOURCE_PASSWORD=postgres
 JOBBOARD_JWT_SECRET=your_secret_key
 ```
 
-## Running the backend
-
-1. Clone the repository and navigate to the project directory.
-
-    ``` bash
-    git clone git@github.com:Angel-Tornero/jobboard-api.git
-    cd jobboard-api
-    ```
-
-2. Start the backend using the provided script:
-    ```bash
-    bash ./scripts/start-backend.sh
-    ```
-    This script will:
-    - Load environment variables from .env
-    - Start a PostgreSQL container
-    - Initialize the database
-    - Launch the Spring Boot service
-
-    If you encounter a permissions issue with the Maven wrapper:
-    ```bash
-    chmod +x ./mvnw
-    ```
-
-## Running Tests
-
-To execute the test suite:
-```bash
-./mvnw test
-```
-
 ## Database
 
 - Database schema: ```./scripts/schema.sql```
@@ -135,18 +104,3 @@ This score is used to order search results.
 - Transparent — easy to see why a job ranks higher
 - Configurable — adjust weights for business priorities
 - Efficient — rules operate independently and can be cached or parallelized
-
-## Scalability Notes
-
-For large datasets:
-
-- **Database optimizations** — Indexes, read replicas, partitioning
-- **Caching layers** — Redis or in-memory caching for frequent queries
-- **Asynchronous computations** — For expensive ranking rules
-- **Horizontal scaling** — Docker/Kubernetes deployments make scaling straightforward
-
-## Bonus features implemented
-
-- Rate limiting
-- Authentication & Authorization
-- Pagination
